@@ -16,7 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// 🔹 Metrics
+// Metrics
 var (
 	eventsProcessed = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -33,14 +33,14 @@ var (
 	)
 )
 
-// 🔹 Logger
+//  Logger
 func initLogger() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 }
 
-// 🔹 Metrics
+//  Metrics
 func initMetrics() {
 	prometheus.MustRegister(eventsProcessed, processingErrors)
 }
@@ -50,18 +50,18 @@ func main() {
 	initLogger()
 	initMetrics()
 
-	log.Info("🚀 Processor starting...")
+	log.Info(" Processor starting...")
 
-	// 🔹 METRICS SERVER
+	// METRICS SERVER
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Info("📊 Metrics at :2112/metrics")
+		log.Info(" Metrics at :2112/metrics")
 		if err := http.ListenAndServe(":2112", nil); err != nil {
-			log.WithError(err).Fatal("❌ Metrics server failed")
+			log.WithError(err).Fatal(" Metrics server failed")
 		}
 	}()
 
-	// 🔹 CONNECT DB WITH RETRY
+	//  CONNECT DB WITH RETRY
 	var db *sql.DB
 	var err error
 
@@ -76,18 +76,17 @@ func main() {
 			}
 		}
 
-		log.Warn("⏳ Waiting for DB...")
+		log.Warn(" Waiting for DB...")
 		time.Sleep(2 * time.Second)
 	}
 
 	if err != nil {
-		log.WithError(err).Fatal("❌ DB not reachable")
+		log.WithError(err).Fatal("DB not reachable")
 	}
 
 	defer db.Close()
-	log.Info("✅ Connected to Postgres")
+	log.Info(" Connected to Postgres")
 
-	// 🔥 CREATE TABLE (CRITICAL FIX)
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS events (
 			id SERIAL PRIMARY KEY,
@@ -95,10 +94,10 @@ func main() {
 		)
 	`)
 	if err != nil {
-		log.WithError(err).Fatal("❌ Failed to create table")
+		log.WithError(err).Fatal(" Failed to create table")
 	}
 
-	// 🔹 CONNECT KAFKA WITH RETRY
+	//  CONNECT KAFKA WITH RETRY
 	var reader *kafka.Reader
 
 	for i := 0; i < 10; i++ {
@@ -117,17 +116,17 @@ func main() {
 			break
 		}
 
-		log.Warn("⏳ Waiting for Kafka...")
+		log.Warn(" Waiting for Kafka...")
 		time.Sleep(2 * time.Second)
 	}
 
-	log.Info("✅ Connected to Kafka")
+	log.Info(" Connected to Kafka")
 
-	// 🔹 PROCESS LOOP
+	//  PROCESS LOOP
 	for {
 		msg, err := reader.ReadMessage(context.Background())
 		if err != nil {
-			log.WithError(err).Error("❌ Kafka read error")
+			log.WithError(err).Error(" Kafka read error")
 			processingErrors.Inc()
 			continue
 		}
@@ -135,11 +134,11 @@ func main() {
 		start := time.Now()
 		txHash := string(msg.Value)
 
-		log.Infof("📥 Received message: %s", txHash)
+		log.Infof("Received message: %s", txHash)
 
 		_, err = db.Exec("INSERT INTO events(data) VALUES($1)", txHash)
 		if err != nil {
-			log.WithError(err).Error("❌ DB insert failed")
+			log.WithError(err).Error(" DB insert failed")
 			processingErrors.Inc()
 			continue
 		}
@@ -148,7 +147,7 @@ func main() {
 			"txHash":  txHash,
 			"offset":  msg.Offset,
 			"latency": time.Since(start).String(),
-		}).Info("✅ Event processed")
+		}).Info(" Event processed")
 
 		eventsProcessed.Inc()
 	}
