@@ -4,9 +4,7 @@ module.exports = (io) => {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    // =========================
-    // CREATE EVENT
-    // =========================
+  
     socket.on("createEvent", async ({ username }) => {
       try {
         if (!username) {
@@ -42,9 +40,7 @@ module.exports = (io) => {
       }
     });
 
-    // =========================
-    // JOIN EVENT
-    // =========================
+    
     socket.on("joinEvent", async ({ eventId, username }) => {
       try {
         const cleanEventId = String(eventId).trim();
@@ -90,9 +86,7 @@ module.exports = (io) => {
       }
     });
 
-    // =========================
-    // DISCONNECT (FIXED + OPTIMIZED)
-    // =========================
+  
     socket.on("disconnect", async () => {
       try {
         console.log("User disconnected:", socket.id);
